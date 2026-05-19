@@ -56,4 +56,59 @@ readinessProbe:
   periodSeconds: 10
   successThreshold: 3
   timeoutSeconds: 5
+
+# Also do the following thing below
+createCert: false
+
+# Certificate generation manaully
+mkdir certs
+cd certs
+
+openssl genrsa -out ca.key 4096
+openssl req -x509 -new -nodes -key ca.key -sha256 -days 3650 -out ca.crt -subj "/CN=elasticsearch-ca"
+openssl genrsa -out tls.key 4096
+openssl req -new -key tls.key -out tls.csr -subj "/CN=elasticsearch-master"
+
+# Create a san.cf
+cat > san.cf 
+subjectAltName = @alt_names
+
+[alt_names]
+DNS.1 = localhost
+DNS.2 = elasticsearch-master
+DNS.3 = elasticsearch-master.elastic-system.svc.cluster.local
+DNS.4 = *.elasticsearch-master
+DNS.5 = *.elasticsearch-master.elastic-system.svc.cluster.local
+
+# Creation of tls.crt
+openssl x509 -req -in tls.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out tls.crt -days 3650 -sha256 -extfile san.cf
+
+# Create the secret
+kubectl create secret generic elastic-certificates --from-file=tls.crt --from-file=tls.key --from-file=ca.crt -n elastic-system
+
+# Add the secret Mounts
+secretMounts: 
+  - name: elastic-certificates
+    secretName: elastic-certificates
+    path: /usr/share/elasticsearch/config/certs
+    defaultMode: 0755
+
+# Add this Config Below Check certificate paths what folder u have created and then add
+esConfig: 
+  elasticsearch.yml: |
+    xpack.security.enabled: true
+
+    xpack.security.transport.ssl.enabled: true
+    xpack.security.transport.ssl.verification_mode: certificate
+    xpack.security.transport.ssl.key: certs/tls.key
+    xpack.security.transport.ssl.certificate: certs/tls.crt
+    xpack.security.transport.ssl.certificate_authorities: certs/ca.crt
+
+    xpack.security.http.ssl.enabled: true
+    xpack.security.http.ssl.key: certs/tls.key
+    xpack.security.http.ssl.certificate: certs/tls.crt
+    xpack.security.http.ssl.certificate_authorities: certs/ca.crt
+
+
+# Also Enable the 
 helm install elasticsearch elastic/elasticsearch --version 8.5.1 -n elastic-system -f values.yaml
