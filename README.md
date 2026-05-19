@@ -155,7 +155,7 @@ resources:
 #elasticsearchCertificateAuthoritiesFile: ca.crt
 
 # if you want HA of kibana then change
-replicas: 1
+replicas: 1 --> 3
 
 # Change protocol from http to https
 protocol: https
@@ -174,9 +174,22 @@ kibanaConfig:
     elasticsearch.ssl.verificationMode: certificate
 
 
+# Change the updatestrategy
+updateStrategy:
+  type: "RollingUpdate"
 
-
-
+# Add this affinity 
+affinity:
+  podAntiAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        labelSelector:
+          matchExpressions:
+            - key: app
+              operator: In
+              values:
+                - kibana
+        topologyKey: topology.kubernetes.io/zone
 
 
 
