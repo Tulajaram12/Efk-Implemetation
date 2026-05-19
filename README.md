@@ -112,3 +112,77 @@ esConfig:
 
 # Also Enable the 
 helm install elasticsearch elastic/elasticsearch --version 8.5.1 -n elastic-system -f values.yaml
+
+
+
+
+###  Kibana Installation
+kubectl create namespace elastic-system
+helm repo add elastic https://helm.elastic.co
+helm repo update
+helm show values elastic/kibana --version 8.5.1
+
+# 1) Add the tolerations
+tolerations:
+  # - key: "workload"
+  #  operator: "Equal"
+  #  value: "elasticsearch"
+  #  effect: "NoSchedule"
+
+# 2) Add the nodeSelector
+nodeSelector:
+  workload: elasticsearch
+
+# 3)Change the initial Delay Second
+readinessProbe:
+  failureThreshold: 3
+  initialDelaySeconds: 60
+  periodSeconds: 10
+  successThreshold: 3
+  timeoutSeconds: 5
+
+# Even Change the resources as needed 
+resources:
+  requests:
+    cpu: "1000m"
+    memory: "2Gi"
+  limits:
+    cpu: "1000m"
+    memory: "2Gi"
+
+# if you have created manually the certificates then comment 
+#elasticsearchCertificateSecret: elasticsearch-master-certs
+#elasticsearchCertificateAuthoritiesFile: ca.crt
+
+# if you want HA of kibana then change
+replicas: 1
+
+# Change protocol from http to https
+protocol: https
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
