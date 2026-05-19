@@ -1,4 +1,4 @@
-# Efk-Implemetation  
+<img width="1334" height="283" alt="image" src="https://github.com/user-attachments/assets/02d1fedd-2493-44a5-b8b9-5541a370bd9d" /># Efk-Implemetation  
 kubectl create namespace elastic-system  
 helm repo add elastic https://helm.elastic.co  
 helm repo update  
@@ -160,10 +160,18 @@ replicas: 1
 # Change protocol from http to https
 protocol: https
 
+# Add the CA Cert Mount
+secretMounts:
+  - name: elastic-certificates
+    secretName: elastic-certificates
+    path: /usr/share/kibana/config/certs
 
 
-
-
+# Add this below
+kibanaConfig:
+  kibana.yml: |
+    elasticsearch.ssl.certificateAuthorities: /usr/share/kibana/config/certs/ca.crt
+    elasticsearch.ssl.verificationMode: certificate
 
 
 
